@@ -17,11 +17,11 @@ On Yun & Leonardo only these ports can be used for RX: 8, 9, 10, 11, 14 (MISO), 
 
 #include <Console.h>
 
-//these no longer neeeded, were for temboo/yun
+//20141110 these no longer neeeded, were for temboo/yun
 //#include <Bridge.h>
 //#include <Temboo.h>
 
-//updating for version to remove temboo dependency
+//20141110 updating for version to remove temboo dependency
 //aws_keys.ino should contain aws public and private keys
 #include <aws_keys.ino>
 
