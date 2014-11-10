@@ -16,8 +16,14 @@ On Yun & Leonardo only these ports can be used for RX: 8, 9, 10, 11, 14 (MISO), 
 //#include <AltSoftSerial.h>
 
 #include <Console.h>
-#include <Bridge.h>
-#include <Temboo.h>
+
+//these no longer neeeded, were for temboo/yun
+//#include <Bridge.h>
+//#include <Temboo.h>
+
+//updating for version to remove temboo dependency
+//aws_keys.ino should contain aws public and private keys
+#include <aws_keys.ino>
 
 //tank identifier
 const char site_tank_number[] = "nis01";
@@ -82,8 +88,10 @@ byte serial_sensors_size = sizeof(serial_sensors);
 */
 
 void setup() {
-  Bridge.begin();                                                            //setup bridge to linux side of yun
-  Console.begin();                                                           //set up the console from yun linux
+  
+  //removing yun specific functionality
+  //Bridge.begin();                                                            //setup bridge to linux side of yun
+  //Console.begin();                                                           //set up the console from yun linux
 
   pinMode(s1_port, OUTPUT);
   pinMode(s0_port, OUTPUT);
@@ -101,9 +109,11 @@ void setup() {
   //if not in debug mode, disable the led's on the sensor circuits
   if (debug) {
     //wait for the console if in debug mode
-    while (!Console)
+    //20141110 changed to Serial from Console
+    while (!Serial)
 
-      Console.println(debug_message);
+      //20141110 changed to Serial from Console
+      Serial.println(debug_message);
 
     for (byte i = 0; i < serial_sensors_size; i++) {
       open_channel(serial_sensors[i]);
@@ -137,7 +147,8 @@ String sensor_query(char channel, String label, byte iterate_count, String temp 
   delay(1000);
 
   if (debug) {
-    Console.println("listen on " + label);
+    //20141110 changed to Serial from Console
+    Serial.println("listen on " + label);
   }
 
   //remove carriage returns & other whitespace from results
@@ -150,9 +161,11 @@ String sensor_query(char channel, String label, byte iterate_count, String temp 
     //do
     if (temp != zero_temp && conductivity != zero_conductivity) {
       if(debug){
-        Console.println(F("both set"));
+        //20141110 changed to Serial from Console
+        Serial.println(F("both set"));
         //2014-03-17 temporarily removed until conductivity sensors recalibrated
-        Console.println(temp + "," + conductivity + "\r");
+        //20141110 chaanged to Serial from Console
+        Serial.println(temp + "," + conductivity + "\r");
         //Console.println(temp + ",B\r");
       }
       sensorserial.print(String(temp) + String(",") + String(conductivity) + String("\r"));
@@ -160,7 +173,8 @@ String sensor_query(char channel, String label, byte iterate_count, String temp 
       //salinity & ph
     } else if (temp != zero_temp && conductivity == zero_conductivity) {
       if(debug){
-        Console.println(F("temp set"));
+        //20141110 changed to Serial from Console
+        Serial.println(F("temp set"));
       }
       sensorserial.print(temp + "\r");
       //added this b/c ph sensor doesn't seem to return with just sending temp
@@ -170,7 +184,8 @@ String sensor_query(char channel, String label, byte iterate_count, String temp 
       //others
     } else {
       if(debug){
-        Console.println(F("neither set"));
+        //20141110 changed to Serial from Console
+        Serial.println(F("neither set"));
       }
       sensorserial.print(read_single_value);
     }
@@ -180,7 +195,8 @@ String sensor_query(char channel, String label, byte iterate_count, String temp 
     String sensor_data = "";
     sensor_data = read_sensor_data();
     if (debug) {
-      Console.println(label + "," + sensor_data);
+      //20141110 changed to Serial from Console
+        Serial.println(label + "," + sensor_data);
     }
 
     return (sensor_data);
@@ -227,8 +243,9 @@ const String temp_label = F("t");
   k1_results.toCharArray(conductivity_result, 14);
   strtok(conductivity_result, ",");
   if(debug){
-    Console.print(F("k1 cond result"));
-    Console.println(conductivity_result);
+    //20141110 changed to Serial from Console
+    Serial.print(F("k1 cond result"));
+    Serial.println(conductivity_result);
   }
   String do_results = sensor_query(do_sensor, do_label, 1, temp_results, conductivity_result);
 
@@ -238,8 +255,9 @@ const String temp_label = F("t");
     //modifies it in place
     strtok(conductivity_result, ",");
     if(debug){
-      Console.print(F("k10 cond result"));
-      Console.println(conductivity_result);
+      //20141110 changed to Serial from Console
+      Serial.print(F("k10 cond result"));
+      Serial.println(conductivity_result);
     }
     String do_results = sensor_query(do_sensor, do_label, 1, temp_results, conductivity_result);
   }
@@ -255,7 +273,8 @@ const String temp_label = F("t");
 
 
   if(debug){
-    Console.print(results_to_email);
+    //20141110 changed to Serial from Console
+    Serial.print(results_to_email);
   }
 
   //email all results in one email
@@ -384,50 +403,6 @@ void ensure_quiescent() { //SoftwareSerial sensorserial) {
 }
 
 
-
-/*
-*****************************
-* function: sqs_send(String sensor_result)
-* send message to amazon sqs queue
-*****************************
-*/
-
-void email_send(String sensor_result) {
-
-  TembooChoreo SendEmailChoreo;
-
-  // Invoke the Temboo client
-  SendEmailChoreo.begin();
-
-  // Set Temboo account credentials
-  SendEmailChoreo.setAccountName(F("tembooaccount"));
-  SendEmailChoreo.setAppKeyName(F("tembooappkeyname"));
-  SendEmailChoreo.setAppKey(F("tembooappkeyhere"));
-
-  // Set credential to use for execution
-  SendEmailChoreo.setCredential(F("BurroSendEmail"));
-
-  // Set Choreo inputs
-  SendEmailChoreo.addInput(F("MessageBody"), String(sensor_result));
-  SendEmailChoreo.addInput(F("Subject"), F("Shrimp Monitor Hourly"));
-  SendEmailChoreo.addInput(F("Password"), F("passwordhere"));
-  SendEmailChoreo.addInput(F("username"), F("emailhere"));
-  SendEmailChoreo.addInput(F("FromAddress"), F("emailhere"));
-  SendEmailChoreo.addInput(F("ToAddress"), F("toemailhere"));
-  //SendEmailChoreo.addInput("ToAddress", "toemailhere");
-
-  // Identify the Choreo to run
-  SendEmailChoreo.setChoreo(F("/Library/Google/Gmail/SendEmail"));
-
-  // Run the Choreo
-  SendEmailChoreo.run();
-
-  SendEmailChoreo.close();
-
-  delay(10000);
-
-}
-
 /*
 *****************************
 * function: sqs_send(String sensor_result)
@@ -437,32 +412,13 @@ void email_send(String sensor_result) {
 
 void sqs_send(String sensor_result) {
 
-  TembooChoreo SendMessageChoreo;
-
-  // Invoke the Temboo client
-  SendMessageChoreo.begin();
-
-  // Set Temboo account credentials
-  SendMessageChoreo.setAccountName(F("tembooaccount"));
-  SendMessageChoreo.setAppKeyName(F("tembooappkeyname"));
-  SendMessageChoreo.setAppKey(F("tembooappkeyi"));
-
-  // Set credential to use for execution
-  SendMessageChoreo.setCredential(F("tembooawscredential"));
-
+  
   // Set Choreo inputs
   SendMessageChoreo.addInput(F("MessageBody"), String(sensor_result));
   SendMessageChoreo.addInput(F("AWSAccountId"), F("awsaccountid"));
   SendMessageChoreo.addInput(F("QueueName"), F("awsqueuename"));
 
-  // Identify the Choreo to run
-  SendMessageChoreo.setChoreo(F("/Library/Amazon/SQS/SendMessage"));
-
-  // Run the Choreo
-  SendMessageChoreo.run();
-
-  SendMessageChoreo.close();
-
+  
 }
 
 /*
