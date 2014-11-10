@@ -26,3 +26,6 @@
 *.exe
 *.out
 *.app
+
+#Amazon keys
+aws_keys.ino
