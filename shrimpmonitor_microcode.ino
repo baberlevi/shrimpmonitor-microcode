@@ -4,6 +4,24 @@
 *   Shrimp Monitor Prototype *
 ******************************
 On Yun & Leonardo only these ports can be used for RX: 8, 9, 10, 11, 14 (MISO), 15 (SCK), 16 (MOSI).
+
+
+//Adafruit CC3000 shield uses the following pins
+SCK - #13
+MISO #12
+MOSI #11
+CS for CC3000 #10
+VBAT_EN #5
+CS for SD Card #4
+IRQ #3
+
+//Mayhew Labs MuxShield II uses the following pins
+digital pins 2, 4, 6, 7
+analog pins A0, A1, A2
+optionally digital pins 8, 10, 11, 12 (I will use solder jumpers to free up these pins)
+
+//warning looks like an overlap on pin 4 between mux and wifi shields; do not plan on using sdcard, maybe not an isssue. need to investigate
+
 */
 
 /*
@@ -24,6 +42,9 @@ On Yun & Leonardo only these ports can be used for RX: 8, 9, 10, 11, 14 (MISO), 
 //20141110 updating for version to remove temboo dependency
 //aws_keys.ino should contain aws public and private keys
 #include <aws_keys.ino>
+
+//201411111 adding include for sha-hmac function
+#include <sha256.h>
 
 //tank identifier
 const char site_tank_number[] = "nis01";
@@ -278,7 +299,7 @@ const String temp_label = F("t");
   }
 
   //email all results in one email
-  email_send(results_to_email);
+  //email_send(results_to_email);
 
   //make seperate sqs queue entry for each sensor
 
@@ -414,9 +435,9 @@ void sqs_send(String sensor_result) {
 
   
   // Set Choreo inputs
-  SendMessageChoreo.addInput(F("MessageBody"), String(sensor_result));
-  SendMessageChoreo.addInput(F("AWSAccountId"), F("awsaccountid"));
-  SendMessageChoreo.addInput(F("QueueName"), F("awsqueuename"));
+  //SendMessageChoreo.addInput(F("MessageBody"), String(sensor_result));
+  //SendMessageChoreo.addInput(F("AWSAccountId"), F("awsaccountid"));
+  //SendMessageChoreo.addInput(F("QueueName"), F("awsqueuename"));
 
   
 }
